@@ -1,0 +1,4 @@
+main()   					
+begin					
+output("hello kyle" how is your day world);
+end main;;
