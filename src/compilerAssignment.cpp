@@ -75,7 +75,7 @@ private:
 		}
 	}
 
-	void checkSymbolVariation(string &symbolCandidate, string &line, int &i, bool &symbolFinished)
+	void checkSymbolVariation(string &symbolCandidate, string &line, int &i, bool &symbolFinished, bool &error)
 	{
 		if (symbolCandidate >= "(" && symbolCandidate <= "-")
 		{
@@ -104,10 +104,18 @@ private:
 		else if (symbolCandidate == "&")
 		{
 			ifSymbolVariant(symbolCandidate, line, i, symbolFinished, "&&");
+			if (symbolCandidate != "&&")
+			{
+				error = true;
+			}
 		}
 		else if (symbolCandidate == "|")
 		{
 			ifSymbolVariant(symbolCandidate, line, i, symbolFinished, "||");
+			if (symbolCandidate != "||")
+			{
+				error = true;
+			}
 		}
 	}
 
@@ -184,19 +192,22 @@ private:
 		}
 	}
 
-	void pushSymbol(string &line, int &i)
+	void pushSymbol(string &line, int &i, bool &error)
 	{
 		string symbolCandidate = "";
 		bool symbolFinished = false;
-		while (testIfSymbol(line[i]) && i <= line.size() && symbolFinished == false)
+		while (testIfSymbol(line[i]) && i <= line.size() && symbolFinished == false && error == false)
 		{
 			symbolCandidate.push_back(line[i]);
 			i++;
-			checkSymbolVariation(symbolCandidate, line,i, symbolFinished);
+			checkSymbolVariation(symbolCandidate, line,i, symbolFinished, error);
 		}
 
-		_lexemes.push_back(symbolCandidate);
-		_tokens.push_back(_tokenmap[symbolCandidate]);
+		if (error == false)
+		{
+			_lexemes.push_back(symbolCandidate);
+			_tokens.push_back(_tokenmap[symbolCandidate]);
+		}
 	}
 
 public:
@@ -265,7 +276,7 @@ public:
 			}
 			else if(testIfSymbol(inputLine[i]))
 			{
-				pushSymbol(inputLine, i);
+				pushSymbol(inputLine, i, error);
 			}
 			// ASCII value of 'tab' is 9
 			else if(inputLine[i] == ' ' || inputLine[i] == 9)
