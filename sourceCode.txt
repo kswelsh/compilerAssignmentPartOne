@@ -1,4 +1,5 @@
-main()   					
-begin					
-output("hello kyle" how is your day world);
-end main;;
+main()		
+    begin 					
+      integer x=5; 		
+      output("hello world"); 	
+    end main; ;
