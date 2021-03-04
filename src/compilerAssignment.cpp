@@ -15,11 +15,13 @@ using namespace std;
 class LexAnalyzer
 {
 private:
-	vector<string> _lexemes;  		// source code file lexemes
-	vector<string> _tokens;   		// source code file tokens
-	map<string, string> _tokenmap;   // valid lexeme/token pairs
+	vector<string> _lexemes;
+	vector<string> _tokens;
+	map<string, string> _tokenmap;
 
 	bool testIfSymbol(char sCandidate)
+	// pre: parm is a symbol one would like to test is valid
+	// post: returns true if symbol is valid, false if symbol is not valid
 	{
 		bool symbol = false;
 		if (sCandidate >= ';' && sCandidate <= '>')
@@ -50,22 +52,11 @@ private:
 		return symbol;
 	}
 
-	bool testIfAlpha(char aCandidate)
-	{
-		bool alpha = false;
-		if (aCandidate >= 'a' && aCandidate <= 'z')
-		{
-			alpha = true;
-		}
-		else if (aCandidate >= 'A' && aCandidate <= 'z')
-		{
-			alpha = true;
-		}
-
-		return alpha;
-	}
-
-	void ifSymbolVariant (string &symbolCandidate, string &line, int &i, bool &symbolFinished, string equalTo)
+	void checkExistentVariant (string &symbolCandidate, string &line, int &i, bool &symbolFinished, string equalTo)
+	// pre: first parm is a valid symbol, second parm is the current line of source code, third parm is current
+	// subscript location of said line, fourth parm is a bool value to note if symbol is complete, fifth parm
+	// is what series of symbols one is testing for
+	// post: if symbol can create a provided variant, said symbol is created, if not, nothing happens
 	{
 		symbolFinished = true;
 		if (symbolCandidate + line[i] == equalTo)
@@ -76,6 +67,12 @@ private:
 	}
 
 	void checkSymbolVariation(string &symbolCandidate, string &line, int &i, bool &symbolFinished, bool &error)
+	// pre: first parm is any symbol that can be an extend symbol, such as == or !=, second parm is the current line
+	// of source code, parm three is the current subscriptlocation on said line, fourth parm is a bool value to note if
+	// symbol is complete, fifth parm is bool error value
+	// post: if following (i+1) creates an extended symbol, said symbol is created, if not, symbol stays the same
+	// error is set to true if single symbol alone is an error, such as '&', symbolFinished is set to true once
+	// provided symbol is complete
 	{
 		if (symbolCandidate >= "(" && symbolCandidate <= "-")
 		{
@@ -87,23 +84,23 @@ private:
 		}
 		else if (symbolCandidate == "=")
 		{
-			ifSymbolVariant(symbolCandidate, line, i, symbolFinished, "==");
+			checkExistentVariant(symbolCandidate, line, i, symbolFinished, "==");
 		}
 		else if (symbolCandidate == "<")
 		{
-			ifSymbolVariant(symbolCandidate, line, i, symbolFinished, "<=");
+			checkExistentVariant(symbolCandidate, line, i, symbolFinished, "<=");
 		}
 		else if (symbolCandidate == ">")
 		{
-			ifSymbolVariant(symbolCandidate, line, i, symbolFinished, ">=");
+			checkExistentVariant(symbolCandidate, line, i, symbolFinished, ">=");
 		}
 		else if (symbolCandidate == "!")
 		{
-			ifSymbolVariant(symbolCandidate, line, i, symbolFinished, "!=");
+			checkExistentVariant(symbolCandidate, line, i, symbolFinished, "!=");
 		}
 		else if (symbolCandidate == "&")
 		{
-			ifSymbolVariant(symbolCandidate, line, i, symbolFinished, "&&");
+			checkExistentVariant(symbolCandidate, line, i, symbolFinished, "&&");
 			if (symbolCandidate != "&&")
 			{
 				error = true;
@@ -111,7 +108,7 @@ private:
 		}
 		else if (symbolCandidate == "|")
 		{
-			ifSymbolVariant(symbolCandidate, line, i, symbolFinished, "||");
+			checkExistentVariant(symbolCandidate, line, i, symbolFinished, "||");
 			if (symbolCandidate != "||")
 			{
 				error = true;
@@ -120,6 +117,12 @@ private:
 	}
 
 	void pushString(string &line, int &i, bool &error, istream &infile)
+	// pre: first parm is a line of code one would like to create a string from, parm two is the
+	// current subscript location of provided line and must be the location directly after a quotation mark
+	// third parm is an bool error value, parm four refers to input file with source code
+	// of provided source code
+	// post: if string is valid, string is pushed to the _lexemes vector and s_str is pushed to the _tokens vector
+	// if string never ends, error message is displayed, i is changed to directly after the pushed string
 	{
 		string stringCandidate = "";
 		bool isString = true;
@@ -139,6 +142,7 @@ private:
 		if (infile.eof() && line[i] != 34)
 		{
 			error = true;
+			cout << "ERROR: String is never ending!" << endl;
 		}
 		else
 		{
@@ -149,16 +153,22 @@ private:
 	}
 
 	void pushNum(string &line, int &i, bool &error)
+	// pre: first parm is a line of code one would like to test for a number, parm two is the
+	// current subscript location of provided line, parm three is an bool error value
+	// post: created num is pushed to the _lexemes vector and token t_int is pushed to the _tokens vector
+	// if num creates an invalid variable, error is set to true and message is displayed, i
+	// is changed to directly after the pushed num
 	{
 		string numCandidate = "";
-		while (line[i] >= '0' && line[i] <= '9' && error == false && i <= line.size())
+		while (isdigit(line[i]) && error == false && i <= line.size())
 		{
 			numCandidate.push_back(line[i]);
 			i++;
 
-			if (testIfAlpha(line[i]) && i < line.size())
+			if (isalpha(line[i]) && i < line.size())
 			{
 				error = true;
+				cout << "ERROR: Invalid variable name!" << endl;
 			}
 		}
 
@@ -170,10 +180,15 @@ private:
 	}
 
 	void pushAlpha(string &line, int &i)
+	// pre: first parm is a line of code one would like to test for a valid variable name or token
+	// parm two is the current subscript location of provided line
+	// post: created variable is tested against the token map, if an token exists, corresponding
+	// token is pushed to the _lexemes and _tokens vectors, if does not exist, variable is
+	// pushed as id token to both vectors, i is moved to directly after the pushed characters
 	{
 		string alphaCandidate = "";
 		int exist;
-		while (testIfAlpha(line[i]) && i <= line.size())
+		while ((isalpha(line[i]) || isdigit(line[i])) && i <= line.size())
 		{
 			alphaCandidate.push_back(line[i]);
 			i++;
@@ -193,6 +208,11 @@ private:
 	}
 
 	void pushSymbol(string &line, int &i, bool &error)
+	// pre: first parm is a line of code one would like to test for a valid symbol, parm
+	// two is the current subscript location of provided line, parm three refers to an bool error value
+	// post: if symbol/group of symbols is valid, tests against token map and pushes to _lexemes and
+	// _tokens vector, if not, error is set to true and error message is displayed, i is moved to directly
+	// after the pushed symbol(s)
 	{
 		string symbolCandidate = "";
 		bool symbolFinished = false;
@@ -207,6 +227,10 @@ private:
 		{
 			_lexemes.push_back(symbolCandidate);
 			_tokens.push_back(_tokenmap[symbolCandidate]);
+		}
+		else
+		{
+			cout << "ERROR: Symbol entered does not exist!" << endl;
 		}
 	}
 
@@ -230,12 +254,6 @@ public:
 			_tokenmap.insert(make_pair(lexemeInput, tokenInput));
 			infile >> tokenInput >> lexemeInput;
 		}
-
-		//map<string, string>::iterator mitr;
-		//for (mitr = _tokenmap.begin(); mitr != _tokenmap.end(); mitr++)
-		//{
-		//	cout << mitr->first << " : " << mitr->second << endl;
-		//}
 	}
 
 	void scanFile(istream& infile, ostream& outfile)
@@ -249,6 +267,9 @@ public:
 	{
 		string inputLine;
 		bool error = false;
+		bool errorNeverendingString = false;
+		bool errorNonExistentSymbol = false;
+		bool errorInvalidVarName = false;
 		int i = 0;
 
 		if (!infile)
@@ -261,11 +282,11 @@ public:
 		while (!infile.eof() && error == false)
 		{
 
-			if (testIfAlpha(inputLine[i]))
+			if (isalpha(inputLine[i]))
 			{
 				pushAlpha(inputLine, i);
 			}
-			else if (inputLine[i] >= '0' && inputLine[i] <= '9')
+			else if (isdigit(inputLine[i]))
 			{
 				pushNum(inputLine, i, error);
 			}
@@ -278,16 +299,15 @@ public:
 			{
 				pushSymbol(inputLine, i, error);
 			}
-			// ASCII value of 'tab' is 9
-			else if(inputLine[i] == ' ' || inputLine[i] == 9)
+			else if(isspace(inputLine[i]))
 			{
 				i++;
 			}
 			else
 			{
 				error = true;
+				cout << "ERROR: Symbol entered does not exist!" << endl;
 			}
-
 			if (i >= inputLine.size())
 			{
 				getline(infile, inputLine);
