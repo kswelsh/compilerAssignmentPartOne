@@ -19,8 +19,37 @@ private:
 	vector<string> _tokens;
 	map<string, string> _tokenmap;
 
+	void errorDisplay(bool errorOne, bool errorTwo, bool errorThree, ostream &outfile)
+	// pre: 1st parm is symbol not recognized error value : 2nd parm is never ending string error value
+	//		3rd parm is invalid variable error value : parm 1, 2, or 3 must be true or function will not work
+	//		4th parm is currently opened output file
+	// post: corresponding error message is displayed and added onto passed in file
+	{
+		if (errorOne == true)
+		{
+			cout << "ERROR: Symbol entered is not recognized!" << endl;
+			outfile << "ERROR: Symbol entered is not recognized!\n";
+		}
+		else if (errorTwo == true)
+		{
+			cout << "ERROR: String entered was never-ending!" << endl;
+			outfile << "ERROR: String entered was never-ending!\n";
+		}
+		else if (errorThree == true)
+		{
+			cout << "ERROR: Variable name entered was invalid!" << endl;
+			outfile << "ERROR: Variable name entered was invalid!\n";
+		}
+		else
+		{
+			cout << "ERROR: Symbol entered is not recognized!" << endl;
+			outfile << "ERROR: Symbol entered is not recognized!\n";
+		}
+		cout << "Error occurred. Source code not scanned completely." << endl;
+	}
+
 	bool testIfSymbol(char sCandidate)
-	// pre: parm is a symbol one would like to test is valid
+	// pre: 1st parm is a symbol one would like to test if valid
 	// post: returns true if symbol is valid, false if symbol is not valid
 	{
 		bool symbol = false;
@@ -49,10 +78,10 @@ private:
 	}
 
 	void checkExistentVariant (string &symbolCandidate, string &line, int &i, bool &symbolFinished, string equalTo)
-	// pre: first parm is a valid symbol, second parm is the current line of source code, third parm is current
-	// subscript location of said line, fourth parm is a bool value to note if symbol is complete, fifth parm
-	// is what series of symbols one is testing for
-	// post: if symbol can create a provided variant, said symbol is created, if not, nothing happens
+	// pre: 1st parm is any already valid symbol : 2nd parm is the current line program is looking at
+	//		3rd parm is subscript location of current line : 4th parm should be bool variable that initally holds
+	//		a value of false and can be changed : 5th parm must be the extended symbol you want to test for
+	// post: if symbol can create a provided variant, said symbol is pushed to symbolCandidate. if not, nothing happens
 	{
 		symbolFinished = true;
 		if (symbolCandidate + line[i] == equalTo)
@@ -62,19 +91,19 @@ private:
 		}
 	}
 
-	void checkSymbolVariation(string &symbolCandidate, string &line, int &i, bool &symbolFinished, bool &error)
-	// pre: first parm is any symbol that can be an extend symbol, such as == or !=, second parm is the current line
-	// of source code, parm three is the current subscript location on said line, fourth parm is a bool value to note if
-	// symbol is complete, fifth parm is bool error value
-	// post: if following (i+1) creates an extended symbol, said symbol is created, if not, symbol stays the same
-	// error is set to true if single symbol alone is an error, such as '&', symbolFinished is set to true once
-	// provided symbol is complete
+	void checkSymbolExtended(string &symbolCandidate, string &line, int &i, bool &symbolFinished, bool &error)
+	// pre: 1st parm is any already valid symbol : 2nd parm is the current line program is looking at
+	// 		3rd parm is subscript location of current line : 4th parm should be a bool variable that initially holds
+	//		a value of false and can be changed : 5th parm is the current error value of the program
+	// post: i is changed to directly after valid symbol candidate. if following (i+1) creates an extended symbol
+	//  	 said symbol is created. if not, symbol stays the same. if a symbol must be extended to be valid
+	// 		 but is unable to be extended, error is set to true
 	{
 		if (symbolCandidate >= "(" && symbolCandidate <= "-")
 		{
 			symbolFinished = true;
 		}
-		else if (symbolCandidate == ";")
+		else if (symbolCandidate == ";" || symbolCandidate == "%" || symbolCandidate == "/")
 		{
 			symbolFinished = true;
 		}
@@ -113,19 +142,18 @@ private:
 	}
 
 	void pushSymbol(string &line, int &i, bool &error)
-	// pre: first parm is a line of code one would like to test for a valid symbol, parm
-	// two is the current subscript location of provided line, parm three refers to an bool error value
-	// post: if symbol/group of symbols is valid, tests against token map and pushes to _lexemes and
-	// _tokens vector, if not, error is set to true and, i is moved to directly
-	// after the pushed symbol(s)
+	// pre: 1st parm is current line program is looking at : 2nd parm is subscript location of sent in line
+	//		3rd parm is current error value of the program
+	// post: i is changed to directly after valid symbol candidate. if no error, symbol is pushed to _lexemes
+	// 		 along with the matching token value pushed to _tokens. if symbol does not exist, error is set to true
 	{
 		string symbolCandidate = "";
 		bool symbolFinished = false;
-		while (testIfSymbol(line[i]) && i <= line.size() && symbolFinished == false && error == false)
+		while (testIfSymbol(line[i]) && i < line.size() && symbolFinished == false && error == false)
 		{
 			symbolCandidate.push_back(line[i]);
 			i++;
-			checkSymbolVariation(symbolCandidate, line,i, symbolFinished, error);
+			checkSymbolExtended(symbolCandidate, line,i, symbolFinished, error);
 		}
 
 		if (error == false)
@@ -136,15 +164,13 @@ private:
 	}
 
 	void pushString(string &line, int &i, bool &error, istream &infile)
-	// pre: first parm is a line of code one would like to create a string from, parm two is the
-	// current subscript location of provided line and must be the location directly after a quotation mark
-	// third parm is an bool error value, parm four refers to input file with source code
-	// of provided source code
-	// post: if string is valid, string is pushed to the _lexemes vector and s_str is pushed to the _tokens vector
-	// if string never ends, error is set to true, i is changed to directly after the pushed string
+	// pre: 1st parm is current line program is looking at : 2nd parm is subscript location of sent in line
+	//		3rd parm is current error value of the program : 4th parm is current source code file
+	// post: i is changed to directly after valid string candidate. if no error, string is pushed to _lexemes
+	//		 along with s_str pushed to _tokens. if error occurs, error is set to true and nothing is pushed.
+	// 		 if string spans more than one line, line is changed to the line the string ends on.
 	{
 		string stringCandidate = "";
-		bool isString = true;
 		i++;
 		while (error == false && !infile.eof() && line[i] != 34)
 		{
@@ -155,14 +181,14 @@ private:
 			{
 				i = 0;
 				getline(infile, line);
+				if (infile.eof())
+				{
+					error = true;
+				}
 			}
 		}
 
-		if (infile.eof() && line[i] != 34)
-		{
-			error = true;
-		}
-		else
+		if (error == false)
 		{
 			_lexemes.push_back(stringCandidate);
 			_tokens.push_back("s_str");
@@ -171,13 +197,13 @@ private:
 	}
 
 	void pushNum(string &line, int &i, bool &error)
-	// pre: first parm is a line of code one would like to test for a number, parm two is the
-	// current subscript location of provided line, parm three is an bool error value
-	// post: created num is pushed to the _lexemes vector and token t_int is pushed to the _tokens vector
-	// if num creates an invalid variable, error is set to true, i is changed to directly after the pushed num
+	// pre: 1st parm is current line program is looking at : 2nd parm is subscript location of sent in line
+	//		3rd parm is current error value of the program
+	// post: i is changed to directly after valid num candidate. if no error occurs, valid candidate is pushed to
+	// 		 _lexemes along with t_int pushed to _tokens. if error occurs, error is set to true and nothing is pushed
 	{
 		string numCandidate = "";
-		while (isdigit(line[i]) && error == false && i <= line.size())
+		while (isdigit(line[i]) && error == false && i < line.size())
 		{
 			numCandidate.push_back(line[i]);
 			i++;
@@ -196,15 +222,14 @@ private:
 	}
 
 	void pushAlpha(string &line, int &i)
-	// pre: first parm is a line of code one would like to test for a valid variable name or token
-	// parm two is the current subscript location of provided line
-	// post: created variable is tested against the token map, if an token exists, corresponding
-	// token is pushed to the _lexemes and _tokens vectors, if does not exist, variable is
-	// pushed as id token to both vectors, i is moved to directly after the pushed characters
+	// pre: 1st parm is current line program is looking at : 2nd parm is subscript location of sent in line
+	// post: i is changed to directly after valid variable/type candidate. candidate is tested against
+	// 		 token map and is inserted into _lexemes and _tokens vectors if exists. if it does not exist
+	//		 token value t_id is pushed to _tokens and variable is pushed to _lexemes
 	{
 		string alphaCandidate = "";
 		int exist;
-		while ((isalpha(line[i]) || isdigit(line[i])) && i <= line.size())
+		while ((isalpha(line[i]) || isdigit(line[i])) && i < line.size())
 		{
 			alphaCandidate.push_back(line[i]);
 			i++;
@@ -225,16 +250,17 @@ private:
 
 
 public:
-	LexAnalyzer(istream& infile)
+	LexAnalyzer(istream &infile)
 	// pre: parameter refers to open data file consisting of token and lexeme pairs i.e.
-	// s_and and t_begin begin t_int 27.  Each pair appears on its own input line.
+	// 		s_and and t_begin begin t_int 27.  Each pair appears on its own input line.
 	// post: tokenmap has been populated
 	{
 		string lexemeInput;
 		string tokenInput;
+
 		if (!infile)
 		{
-			cout << "ERROR: Lexeme/token data file is not open! Exiting program." << endl;
+			cout << "ERROR: Lexeme/token data file is not open or failed to open! Exiting program." << endl;
 			exit(-1);
 		}
 
@@ -246,14 +272,14 @@ public:
 		}
 	}
 
-	void scanFile(istream& infile, ostream& outfile)
+	void scanFile(istream &infile, ostream &outfile)
 	// pre: 1st parameter refers to an open text file that contains source
-	// code in the language, 2nd parameter refers to an open empty output file
+	// 		code in the language, 2nd parameter refers to an open empty output file
 	// post: If no error, the token and lexeme pairs for the given input
-	// file have been written to the output file.  If there is an error,
-	// the incomplete token/lexeme pairs, as well as an error message have
-	// written to the output file.  A success or fail message has printed
-	// to the console.
+	// 		 file have been written to the output file.  If there is an error,
+	// 		 the incomplete token/lexeme pairs, as well as an error message have
+	// 		 written to the output file.  A success or fail message has printed
+	// 		 to the console.
 	{
 		string inputLine;
 		bool error = false;
@@ -264,12 +290,12 @@ public:
 
 		if (!infile)
 		{
-			cout << "ERROR: Source code file is not open! Exiting program." << endl;
+			cout << "ERROR: Source code file is not open or failed to open! Exiting program." << endl;
 			exit(-1);
 		}
 		if (!outfile)
 		{
-			cout << "ERROR: Output file is not open! Exiting program." << endl;
+			cout << "ERROR: Output file is not open or failed to open! Exiting program." << endl;
 			exit(-1);
 		}
 
@@ -323,31 +349,9 @@ public:
 			outfile << _tokens[i] << " : " << _lexemes[i] << "\n";
 		}
 
-		for (int i = 0; i < _tokens.size(); i++)
-		{
-			cout << _tokens[i] << " : " << _lexemes[i] << "\n";
-		}
-
 		if (error == true)
 		{
-			if (errorNonExistentSymbol == true)
-			{
-				cout << "ERROR: Symbol entered is not recognized!\n";
-			}
-			else if (errorNeverendingString == true)
-			{
-				cout << "ERROR: String entered was never-ending!\n";
-			}
-			else if (errorInvalidVarName == true)
-			{
-				cout << "ERROR: Variable name entered was invalid!\n";
-			}
-			else
-			{
-				cout << "ERROR: Symbol entered is not recognized!\n";
-			}
-
-			cout << "Error occurred... source code not scanned completely." << endl;
+			errorDisplay(errorNonExistentSymbol, errorNeverendingString, errorInvalidVarName, outfile);
 		}
 		else
 		{
@@ -361,25 +365,29 @@ int main()
 	string sourceCodeFileName;
 	string tokenLexemeDataFileName;
 	string outputFileName;
-
-	//cout << "Enter the name of the source code file: " << endl;
-	//cin >> sourceCodeFileName;
-	//cout << "Enter the name of the token/lexeme data file: " << endl;
-	//cin >> tokenLexemeDataFileName;
-	//cout << "Enter the name of the output file: " << endl;
-	//cin >> outputFileName;
-
-	outputFileName = "test.txt";
-	ifstream tokenLexemeDataFile("tokenlexemedata.txt");
-	ifstream sourceCodeFile("sourceCode.txt");
 	ofstream outputFile;
-	LexAnalyzer scanner(tokenLexemeDataFile);
 
+	cout << "Enter the name of the source code file: " << endl;
+	cin >> sourceCodeFileName;
+	cout << "Enter the name of the token/lexeme data file: " << endl;
+	cin >> tokenLexemeDataFileName;
+	cout << "Enter the name of the output file: " << endl;
+	cin >> outputFileName;
+
+	ifstream tokenLexemeDataFile(tokenLexemeDataFileName);
+	LexAnalyzer scanner(tokenLexemeDataFile);
 	tokenLexemeDataFile.close();
+
+	ifstream sourceCodeFile(sourceCodeFileName);
 	outputFile.open(outputFileName);
 	scanner.scanFile(sourceCodeFile, outputFile);
 	outputFile.close();
 	sourceCodeFile.close();
+
+	if (outputFile.is_open() == true)
+	{
+		cout << "WARNING: Output file failed to close!" << endl;
+	}
 
 	return 0;
 }
