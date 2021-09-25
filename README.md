@@ -1,8 +1,14 @@
-# compilerAssignmentPartOne
+<h1 align="center">Compiler Part One</h1>
+<p align="center">The Lexical Analyzer</p>
 
-This assignment consists of developing the first step of a compiler – the lexical analyzer, also called the scanner. 
-The purpose of this program is to read in a source code file and create a corresponding token/lexeme file that represents the source code file.
+## Features
+:computer: Maps <br />
+:computer: Vectors <br />
+:computer: Effective Documentation <br />
+:computer: File Streams <br />
+:computer: OOP Design <br />
+:computer: Compilation Understanding <br />
 
-Guidelines for this were given to us in CSCE 306 at North Central College.
-
-Kyle Welsh
+## Purpose
+The purpose of this project was to simply create the lexical analyzer portion of a compiler.
+This is know as the first step of compilation.
