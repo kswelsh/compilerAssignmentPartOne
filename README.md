@@ -11,4 +11,5 @@
 
 ## Purpose
 The purpose of this project was to simply create the lexical analyzer portion of a compiler.
-This is know as the first step of compilation.
+This is know as the first step of compilation. A 'language' was given to us at North Central
+College and we were required to create this entire program.
